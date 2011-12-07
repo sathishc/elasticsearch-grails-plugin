@@ -26,7 +26,7 @@ import java.util.*;
 public class SearchableClassPropertyMapping {
 
     public static final Set<String> SEARCHABLE_MAPPING_OPTIONS = new HashSet<String>(Arrays.asList("boost", "index", "analyzer"));
-    public static final Set<String> SEARCHABLE_SPECIAL_MAPPING_OPTIONS = new HashSet<String>(Arrays.asList("component","converter","reference","excludeFromAll","maxDepth"));
+    public static final Set<String> SEARCHABLE_SPECIAL_MAPPING_OPTIONS = new HashSet<String>(Arrays.asList("component","converter","reference","excludeFromAll","maxDepth","geo_point"));
 
     /** Grails attributes of this property */
     GrailsDomainClassProperty grailsProperty;
@@ -70,6 +70,19 @@ public class SearchableClassPropertyMapping {
     public Object getReference() {
         return specialAttributes.get("reference");
     }
+
+    // for MediaNearby
+    /**
+     * @return component property?
+     */
+    public boolean isGeoPoint() {
+        return specialAttributes.get("geo_point") != null;
+    }
+
+    public Object getGeoPoint() {
+        return specialAttributes.get("geo_point");
+    }
+
 
     /**
      * See http://www.elasticsearch.com/docs/elasticsearch/mapping/all_field/

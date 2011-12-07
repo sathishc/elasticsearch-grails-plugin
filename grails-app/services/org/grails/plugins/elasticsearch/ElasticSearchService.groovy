@@ -15,24 +15,22 @@
  */
 package org.grails.plugins.elasticsearch
 
+import org.apache.log4j.Logger
 import org.codehaus.groovy.grails.commons.GrailsApplication
 import org.codehaus.groovy.grails.plugins.support.aware.GrailsApplicationAware
-import org.elasticsearch.client.Client
-import org.elasticsearch.action.search.SearchType
-import static org.elasticsearch.client.Requests.searchRequest
-import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource
-import static org.elasticsearch.index.query.QueryBuilders.queryString
-import org.apache.log4j.Logger
+import org.elasticsearch.action.count.CountRequest
 import org.elasticsearch.action.search.SearchRequest
+import org.elasticsearch.action.search.SearchType
+import org.elasticsearch.client.Client
+import org.elasticsearch.common.unit.DistanceUnit
+import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.highlight.HighlightBuilder
-import org.elasticsearch.search.SearchHit
-import org.grails.plugins.elasticsearch.util.GXContentBuilder
+import org.elasticsearch.search.sort.GeoDistanceSortBuilder
+import org.elasticsearch.search.sort.ScoreSortBuilder
 import org.elasticsearch.search.sort.SortOrder
-import org.elasticsearch.action.count.CountRequest
-import org.elasticsearch.action.ActionRequest
-import org.elasticsearch.client.Requests
-import org.elasticsearch.action.support.broadcast.BroadcastOperationResponse
+import org.grails.plugins.elasticsearch.util.GXContentBuilder
+import static org.elasticsearch.index.query.QueryBuilders.queryString
 
 public class ElasticSearchService implements GrailsApplicationAware {
     static LOG = Logger.getLogger(ElasticSearchService.class)
@@ -318,8 +316,26 @@ public class ElasticSearchService implements GrailsApplicationAware {
         source.from(params.from ? params.from as int : 0)
         source.size(params.size ? params.size as int : 60)
         source.explain(params.explain ?: true)
+
+        // added by MediaNearby to sort based on scores
+        def scoreBuilder = new ScoreSortBuilder()
+        source.sort(scoreBuilder)
+
+
         if (params.sort) {
-            source.sort(params.sort, SortOrder.valueOf(params.order?.toUpperCase() ?: "ASC"))
+            //added by MediaNearby to handle geo_distance based sorts
+            if(params.sort?._geo_distance){
+                def lon = params.sort._geo_distance?.lon
+                def lat = params.sort._geo_distance?.lat
+                def sortOrder = (params.sort._geo_distance?.order == "asc")?SortOrder.ASC:SortOrder.DESC
+                def distanceUnit = DistanceUnit.fromString(params.sort._geo_distance?.unit)
+                def geoDistanceBuilder = new GeoDistanceSortBuilder("ownership.mediaNearbyUser.profile.address.geoPoint").order(sortOrder).point(lat,lon).unit(distanceUnit)
+                source.sort(geoDistanceBuilder)
+            }
+            else{
+                source.sort(params.sort, SortOrder.valueOf(params.order?.toUpperCase() ?: "ASC"))
+            }
+
         }
 
         // Handle the query, can either be a closure or a string

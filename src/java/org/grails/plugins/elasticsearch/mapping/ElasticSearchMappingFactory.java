@@ -16,7 +16,6 @@
 package org.grails.plugins.elasticsearch.mapping;
 
 import org.codehaus.groovy.grails.commons.GrailsClassUtils;
-import org.grails.plugins.elasticsearch.ElasticSearchContextHolder;
 import org.springframework.util.ClassUtils;
 
 import java.util.*;
@@ -74,6 +73,9 @@ public class ElasticSearchMappingFactory {
                     // Use 'string' type for properties with custom converter.
                     // Arrays are automatically resolved by ElasticSearch, so no worries.
                     propType = "string";
+                }else if (scpm.isGeoPoint()) {
+                    //Geopoint property support : for MediaNearby
+                    propType = "geo_point";
                 } else {
                     propType = "object";
                 }
@@ -102,6 +104,11 @@ public class ElasticSearchMappingFactory {
                     props.put("id", defaultDescriptor("long", "no", true));
                     props.put("class", defaultDescriptor("string", "no", true));
                     props.put("ref", defaultDescriptor("string", "no", true));
+                }
+            }
+            else{
+                if(scpm.isGeoPoint()){ // : for MediaNearby
+                    propType = "geo_point";
                 }
             }
             propOptions.put("type", propType);
